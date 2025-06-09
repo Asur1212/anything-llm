@@ -54,9 +54,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
 USER anythingllm
 WORKDIR /app
 
-# Puppeteer does not ship with an ARM86 compatible build for Chromium
-# so web-scraping would be broken in arm docker containers unless we patch it
-# by manually installing a compatible chromedriver.
+# Puppeteer ARM64 patch
 RUN echo "Need to patch Puppeteer x Chromium support for ARM86 - installing dep!" && \
     curl https://playwright.azureedge.net/builds/chromium/1088/chromium-linux-arm64.zip -o chrome-linux.zip && \
     unzip chrome-linux.zip && \
@@ -132,7 +130,7 @@ WORKDIR /app
 FROM build AS frontend-build
 COPY --chown=anythingllm:anythingllm ./frontend /app/frontend/
 WORKDIR /app/frontend
-RUN yarn install --network-timeout 100000 && yarn cache clean
+RUN yarn install --legacy-peer-deps --network-timeout 100000 && yarn cache clean
 RUN yarn build && \
     cp -r dist /tmp/frontend-build && \
     rm -rf * && \
@@ -145,14 +143,14 @@ WORKDIR /app
 FROM build AS backend-build
 COPY --chown=anythingllm:anythingllm ./server /app/server/
 WORKDIR /app/server
-RUN yarn install --production --network-timeout 100000 && yarn cache clean
+RUN yarn install --production --legacy-peer-deps --network-timeout 100000 && yarn cache clean
 WORKDIR /app
 
 # Install collector dependencies
 COPY --chown=anythingllm:anythingllm ./collector/ ./collector/
 WORKDIR /app/collector
 ENV PUPPETEER_DOWNLOAD_BASE_URL=https://storage.googleapis.com/chrome-for-testing-public
-RUN yarn install --production --network-timeout 100000 && yarn cache clean
+RUN yarn install --production --legacy-peer-deps --network-timeout 100000 && yarn cache clean
 
 WORKDIR /app
 USER anythingllm
